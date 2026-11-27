@@ -1,7 +1,7 @@
 ---
 name: ml-arch-explainer
 description: >
-  Deeply interpret AI / Machine Learning paper model architecture diagrams and generate
+  Interpret AI/ML architecture figures alongside their original papers and generate
   a self-contained, Distill.pub-style interactive academic HTML reader. Use this skill
   whenever the user uploads, references, or provides a model architecture figure, neural
   network diagram, framework overview, or training/inference pipeline image (e.g., "解读这个架构图",
@@ -19,7 +19,13 @@ Distill.pub-inspired HTML deep-read guide featuring:
 
 ## Execution Workflow
 
-Follow these 5 steps strictly in order:
+### Establish the primary source before interpreting the figure
+
+When a PDF, paper link, or paper text accompanies the image, read that version first. Match the uploaded diagram to the numbered figure using its caption, module names and connections. If the figure is given only inside a PDF, render its page and use the matching figure region for comparison. Preserve the supplied image when available. When different versions disagree, identify both versions or the discrepancy.
+
+Read the task definition, the text referring to the figure, the equations and algorithm that implement it, and any appendix or ablation needed for an assertion. Check tensor operations, time indices, parameter ownership, data splits, reward/loss definitions and training versus inference against these passages. Inspect the rendered page if text extraction loses mathematical notation. Record the source title and figure locator in `meta.source_paper`. Attach claim-level locators in each module's `evidence` list. Label observations from the figure, definitions from the paper, experimental findings and explanatory inferences distinctly. If the figure and text use different notation, show both and explain their relationship.
+
+If only an image is supplied, look for the original via a reliable title or distinctive labels when search is available and permitted. Check the figure itself before identifying a match. If it cannot be identified, ask for the PDF or DOI when the user specifically needs a paper-grounded reading. For an ordinary image-only request, proceed with clearly marked figure-based observations if the source remains unavailable. If a supplied paper is unreadable or depicts a different figure, explain the mismatch and request the correct source before attributing claims to it. Related papers can explain background but cannot establish what this method implemented.
 
 ### Step 1: High-Precision Visual Deconstruction
 Inspect the figure, caption and relevant method section when provided. If the figure is unreadable, ask for a clearer copy or the figure number before reconstructing it.
@@ -67,4 +73,4 @@ If `build_html.py` reports any schema/reference errors (e.g., broken edge IDs, u
 After generating the HTML successfully, reply to the user with:
 1. The saved HTML file path (ready to open directly in any browser).
 2. A 3-bullet executive overview of the method's core innovation and end-to-end data flow.
-3. Any inferred abbreviations or assumptions listed transparently so the user can refine them if needed.
+3. The source paper and figure locator when matched, plus any inferred abbreviations or assumptions listed transparently so the user can refine them if needed.

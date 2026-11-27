@@ -18,7 +18,7 @@ git clone https://github.com/Yurken/ml-arch-explainer.git ~/.codex/skills/ml-arc
 git clone https://github.com/Yurken/ml-arch-explainer.git ~/.claude/skills/ml-arch-explainer
 ```
 
-也可将仓库克隆到项目内的 `.agents/skills/ml-arch-explainer`（Codex）或 `.claude/skills/ml-arch-explainer`（Claude Code）。在新会话中附上原图，如有论文正文，可一并提供。
+也可将仓库克隆到项目内的 `.agents/skills/ml-arch-explainer`（Codex）或 `.claude/skills/ml-arch-explainer`（Claude Code）。在新会话中附上原图和论文 PDF 或链接。技能会先定位图号、核对正文公式和算法，再给每个模块标出原文依据。只有图片时，会尝试查找并匹配原论文。
 
 > 用 ml-arch-explainer 解读这张架构图，区分训练和推理路径，标出图中需要推断的维度，生成中文交互 HTML。
 

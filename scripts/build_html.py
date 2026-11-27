@@ -30,10 +30,11 @@ NODE = {
     "repeat_badge?": str, "role": str, "io": {"inputs": [TENSOR], "outputs": [TENSOR]},
     "mechanics": {"intuition": str, "formula_latex?": str, "formula_notes?": [str], "pseudocode?": str},
     "rationale?": {"why_here": str, "alternatives?": [str], "ablation_impact?": str, "implementation_notes?": str},
+    "evidence?": [{"kind": ("paper", "figure", "experiment", "inference"), "locator": str, "claim": str}],
     "concepts?": [{"term": str, "brief": str}], "papers?": [PAPER],
 }
 SCHEMA = {
-    "meta": {"title": str, "subtitle?": str, "domain?": str, "venue_year?": str, "core_insight": str,
+    "meta": {"source_paper?": {"title": str, "figure": str}, "title": str, "subtitle?": str, "domain?": str, "venue_year?": str, "core_insight": str,
              "tags?": [str], "default_layout?": ("horizontal", "vertical"), "overview_summary": str, "uncertainties?": [str]},
     "symbol_glossary": [{"symbol": str, "meaning": str}], "nodes": [NODE],
     "edges": [{"id": str, "source": str, "target": str, "type": ("main", "residual", "conditioning", "loss"),
@@ -79,9 +80,17 @@ def validate_data(data):
     check_shape(data, SCHEMA, "data")
     if not data["meta"]["title"].strip() or not data["nodes"] or not data["steps"]:
         raise ValueError("meta.title, nodes and steps must be nonempty")
+    source = data["meta"].get("source_paper")
+    if source and not all(source[field].strip() for field in ("title", "figure")):
+        raise ValueError("meta.source_paper needs a nonempty title and figure locator")
     nodes = unique_ids(data["nodes"], "nodes")
     edges = unique_ids(data["edges"], "edges")
     for node in data["nodes"]:
+        if source and not node.get("evidence"):
+            raise ValueError(f"{node['id']}: a paper-grounded node needs evidence")
+        for entry in node.get("evidence", []):
+            if not entry["claim"].strip() or not entry["locator"].strip():
+                raise ValueError(f"{node['id']}: incomplete evidence claim or locator")
         if min(node["stage"], node.get("lane", 0)) < 0:
             raise ValueError(f"{node['id']}: stage and lane must be nonnegative")
         formula = node["mechanics"].get("formula_latex", "")

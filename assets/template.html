@@ -773,6 +773,7 @@
       <div class="kicker-row" id="kickerRow"></div>
       <h1 class="title" id="pageTitle"></h1>
       <p class="subtitle" id="pageSubtitle"></p>
+      <p id="sourcePaper" hidden></p>
       <div class="core-insight" id="coreInsight"></div>
       <div class="toolbar">
         <div class="tag-list" id="tagList"></div>
@@ -992,6 +993,11 @@
 
       // Header
       const m = ARCH_DATA.meta || {};
+      if (m.source_paper) {
+        const source = document.getElementById("sourcePaper");
+        source.textContent = "原文 · " + m.source_paper.title + " · " + m.source_paper.figure;
+        source.hidden = false;
+      }
       const kickerParts = [];
       if (m.domain) kickerParts.push(`<span class="kicker-badge">${escapeHtml(m.domain)}</span>`);
       if (m.venue_year) kickerParts.push(`<span>${escapeHtml(m.venue_year)}</span>`);
@@ -1608,6 +1614,14 @@
             ${papers.length ? papers.map(renderPaperCard).join("") : `<p class="prose" style="color:var(--text-muted);">暂未关联特定论文。</p>`}
           </div>
         `;
+      }
+      if (node.evidence && node.evidence.length) {
+        const labels = { paper: "正文定义", figure: "图中可见", experiment: "实验报告", inference: "解读推断" };
+        const entries = node.evidence.map((e) =>
+          `<li><strong>${labels[e.kind]} · ${escapeHtml(e.locator)}</strong><br>${renderInlineMath(e.claim)}</li>`
+        ).join("");
+        body.insertAdjacentHTML("beforeend",
+          `<section class="section-block"><h4 class="section-label">原文依据与解读</h4><ul class="bullet-list">${entries}</ul></section>`);
       }
     }
 

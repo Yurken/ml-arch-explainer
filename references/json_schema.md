@@ -14,6 +14,10 @@ See [the complete executable example](../examples/input-embedding.json) for the 
 - Each paper requires `title`, `authors_year`, `relation` and boolean `verified`. Provide a direct HTTPS link after checking the primary paper record. Otherwise omit `url` to generate a title search, or supply an arXiv or Google Scholar search URL.
 
 
+## Original paper and claim-level evidence
+
+When the original figure has been matched, set `meta.source_paper` to an object with nonempty `title` and `figure` (e.g. “Fig. 2, PDF p. 4”). Each node then requires an `evidence` array with at least one entry. Use a precise `locator` (section, equation, algorithm line, figure panel or table), a short `claim`, and a `kind` of `paper`, `figure`, `experiment` or `inference`. For an inference, cite the passage or figure detail that motivates it and state the remaining assumption. Use printed page numbers or explicitly label PDF page indices as one-based. Use locators that work offline. Image-only guides may omit the source object.
+
 ## Enum Constraints
 
 - `meta.default_layout`: `"horizontal"` (recommended for most diagrams) or `"vertical"`.
