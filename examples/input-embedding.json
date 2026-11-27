@@ -26,7 +26,7 @@
     },
     {
       "symbol": "D",
-      "meaning": "隐藏层特征维度（d_model）"
+      "meaning": "隐藏层特征维度（$d_{\\mathrm{model}}$）"
     }
   ],
   "nodes": [
@@ -49,7 +49,7 @@
         ],
         "outputs": [
           {
-            "name": "E",
+            "name": "$E$",
             "shape": "[B, L, D]",
             "dtype": "float"
           }
@@ -94,17 +94,17 @@
       "io": {
         "inputs": [
           {
-            "name": "E",
+            "name": "$E$",
             "shape": "[B, L, D]"
           },
           {
-            "name": "P",
+            "name": "$P$",
             "shape": "[L, D]"
           }
         ],
         "outputs": [
           {
-            "name": "X",
+            "name": "$X$",
             "shape": "[B, L, D]"
           }
         ]
@@ -142,7 +142,7 @@
       "source": "embed",
       "target": "add_pos",
       "type": "main",
-      "label": "E",
+      "label": "$E$",
       "tensor_shape": "[B, L, D]",
       "description": "缩放后的嵌入进入逐元素加法。"
     }

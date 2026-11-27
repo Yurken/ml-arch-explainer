@@ -12,9 +12,10 @@ description: >
 
 Transform any uploaded AI/ML paper architecture diagram into a standalone, interactive,
 Distill.pub-inspired HTML deep-read guide featuring:
-- Interactive reconstructed DAG flow (with pan/zoom, horizontal/vertical switch, and original image side-by-side comparison).
-- Step-by-step forward/training walkthrough highlighting active paths and tensor shape transitions.
-- Per-module deep inspection: intuition, KaTeX math, PyTorch-style pseudocode, design rationale & ablation intuition, prerequisite concepts, and verified/safe-linked related papers.
+- Interactive reconstructed DAG flow (with collision-free outer-channel routing for skip/feedback loops, optional phase `groups`, quick module navigation bar, auto-focus camera, horizontal/vertical switch, and full-width side-by-side comparison with the original figure).
+- Dual reading modes: **图解分栏** (interactive graph + unified all-in-one inspector with optional section filters) and **连续精读** (Distill.pub-style full-article reader with sticky table of contents), plus light/dark theme toggle.
+- Step-by-step forward/training walkthrough highlighting active paths, auto-panning to focused nodes, and showing tensor shape transitions.
+- Per-module deep inspection: intuition, KaTeX math, PyTorch-style pseudocode, design rationale & ablation intuition, prerequisite concepts, collapsible claim-level paper evidence, and verified/safe-linked related papers.
 - End-to-end tensor trace table, symbol glossary, and deduplicated reading list.
 
 ## Execution Workflow
@@ -29,14 +30,16 @@ If only an image is supplied, look for the original via a reliable title or dist
 
 ### Step 1: High-Precision Visual Deconstruction
 Inspect the figure, caption and relevant method section when provided. If the figure is unreadable, ask for a clearer copy or the figure number before reconstructing it.
-1. Identify the method name, domain (e.g., LLM, VLM, Diffusion, RL, GNN, Audio), and whether the diagram mixes **training-only branches** (losses, teacher networks, stop-gradient) with **inference paths**.
+1. Identify the method name, domain (e.g., LLM, VLM, Diffusion, RL, GNN, Audio), macro phases/regions (to populate `groups`), and whether the diagram mixes **training-only branches** (losses, teacher networks, stop-gradient) with **inference paths**.
 2. Enumerate EVERY visible block/module, input, output, residual/skip connection (`+`, `Concat`), conditioning arrow, gating mechanism, repeated block indicator (`×N`), and mathematical symbol.
 3. Determine topological ordering (`stage`: `0, 1, 2, ...` from input to output) and parallel branches (`lane`: `0, 1, ...` for multi-stream paths like vision/text encoders or auxiliary loss branches).
+   - **Readability budget**: Aim for **5–12 semantic nodes** and **≤ 7 stages**. If 3–4 symmetric sibling components share identical incoming and outgoing connections (e.g., 4 parallel basis functions), merge them into one composite node and detail every component in `mechanics` / `formula_latex` rather than creating 12+ crossing edges.
+   - If the pipeline inherently spans `>= 8` stages, set `"default_layout": "vertical"` or define `groups` so the visual hierarchy stays scannable.
 4. Note any ambiguous abbreviations or unlabelled dimensions (record them explicitly in `meta.uncertainties`).
 
 ### Step 2: Knowledge Enrichment & Paper Anti-Hallucination
 Ground the explanation in the figure and available paper. Label conventional formulas, illustrative pseudocode and hypothetical ablation effects as inferences when the authors do not specify or test them. For each module, cover the applicable layers:
-- **Mechanics**: Clear intuition, exact mathematical formulation (LaTeX), symbol meanings, and concise PyTorch-style pseudocode.
+- **Mechanics**: Clear, concise intuition (2–4 sentences), exact mathematical formulation (LaTeX, using `\begin{aligned}` line breaks whenever a formula exceeds ~65 chars), symbol meanings, and concise PyTorch-style pseudocode (2–8 lines with `# [shape]` comments).
 - **Design Rationale**: Why this module exists here, comparison with common alternatives, ablation intuition ("what breaks if removed/replaced?"), and practical implementation details.
 - **Knowledge & Paper Lineage**: Prerequisite concepts + related papers (`foundational`, `direct_predecessor`, `alternative`, `follow_up`).
 
@@ -51,9 +54,14 @@ Read [the JSON contract](references/json_schema.md) carefully and generate a val
 
 Key quality requirements:
 - **Language**: Write all explanatory prose in clear, natural **Chinese (中文)** while preserving standard English ML terms (e.g., Multi-Head Attention, Residual Connection, Stop-Gradient) and standard math/code notation.
+- **Concise Labels**: Keep `short_name` ≤ 12 Chinese chars (or ≤ 18 ASCII chars), `name` ≤ 20 Chinese chars, and edge labels ≤ 14 chars so SVG elements remain crisp and uncluttered.
 - **Tensor Shapes**: Use consistent dimension symbols across the entire pipeline (e.g., `B`, `L`, `D`, `H`, `V`, `C`, `H_img`, `W_img`) and define every symbol in `symbol_glossary`. If the diagram omits concrete shapes, provide canonical symbolic shapes and note that they are symbolic.
 - **LaTeX Escaping**: Double-escape backslashes inside JSON strings (`\\frac`, `\\text`, `\\sigma`, `\\mathbb{R}`).
 - **Completeness**: Every node in `nodes` must be covered by at least one step in `steps`.
+
+### Typeset every mathematical symbol
+
+Use explicit inline LaTeX for every variable, subscript, superscript, operator and expression in human-facing text, including headings, graph labels, walkthroughs, tensor names, evidence and glossary definitions. Write a semantic subscript as $h_{\mathrm{sem}}$ and a round index as $z^{(k)}$. Put complete expressions inside one pair of delimiters so spacing, accents and operators share the same math context. In JSON, double each LaTeX backslash. Use raw LaTeX in pure formula, glossary-symbol and tensor-shape fields, or delimit only the math in a mixed-language field. Preserve executable pseudocode, identifiers and cited metadata. Describe mathematical labels in the supplied figure with typeset text in the reconstruction.
 
 ### Step 4: Compile & Validate HTML
 Run the bundled compiler script to validate the JSON, embed the original image as Base64, and produce a zero-dependency single-file HTML:
@@ -68,6 +76,8 @@ python3 <SKILL_DIR>/scripts/build_html.py \
 *(Note: `<SKILL_DIR>` is the directory containing this `SKILL.md`. If the user wants a specific output path, honor it; otherwise save as `<method_slug>_arch_guide.html` in the current working directory.)*
 
 If `build_html.py` reports any schema/reference errors (e.g., broken edge IDs, unescaped tokens, missing fields), fix the JSON and re-run until validation passes cleanly.
+
+When Node.js is present the compiler checks the actual expressions with the bundled KaTeX before writing the file. Fix any reported field and rebuild. Also open the result and check math in the glossary, both views, graph labels, IO and tensor trace. If Node.js is unavailable, use the browser to inspect the rendered guide for formula errors before delivery.
 
 ### Step 5: Deliver Concise Summary
 After generating the HTML successfully, reply to the user with:

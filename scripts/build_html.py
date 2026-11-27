@@ -12,6 +12,8 @@ import html
 import json
 import mimetypes
 import re
+import shutil
+import subprocess
 import sys
 from urllib.parse import urlsplit
 from pathlib import Path
@@ -23,6 +25,10 @@ TENSOR = {"name": str, "shape": str, "dtype?": str}
 PAPER = {
     "title": str, "authors_year": str, "relation": ("foundational", "direct_predecessor", "alternative", "follow_up"),
     "takeaway?": str, "url?": str, "verified": bool,
+}
+GROUP = {
+    "id": str, "label": str, "node_ids": [str],
+    "color?": ("blue", "purple", "green", "amber", "slate"),
 }
 NODE = {
     "id": str, "name": str, "short_name?": str, "stage": int, "lane?": int,
@@ -36,7 +42,9 @@ NODE = {
 SCHEMA = {
     "meta": {"source_paper?": {"title": str, "figure": str}, "title": str, "subtitle?": str, "domain?": str, "venue_year?": str, "core_insight": str,
              "tags?": [str], "default_layout?": ("horizontal", "vertical"), "overview_summary": str, "uncertainties?": [str]},
-    "symbol_glossary": [{"symbol": str, "meaning": str}], "nodes": [NODE],
+    "symbol_glossary": [{"symbol": str, "meaning": str}],
+    "groups?": [GROUP],
+    "nodes": [NODE],
     "edges": [{"id": str, "source": str, "target": str, "type": ("main", "residual", "conditioning", "loss"),
                "label?": str, "tensor_shape?": str, "description?": str}],
     "steps": [{"step_number?": int, "title": str, "phase": ("forward", "training", "inference"),
@@ -85,6 +93,14 @@ def validate_data(data):
         raise ValueError("meta.source_paper needs a nonempty title and figure locator")
     nodes = unique_ids(data["nodes"], "nodes")
     edges = unique_ids(data["edges"], "edges")
+    if data.get("groups"):
+        unique_ids(data["groups"], "groups")
+        for grp in data["groups"]:
+            if not grp["label"].strip() or not grp["node_ids"]:
+                raise ValueError(f"groups.{grp['id']}: label and node_ids must be nonempty")
+            unknown = set(grp["node_ids"]) - nodes
+            if unknown:
+                raise ValueError(f"groups.{grp['id']}: unknown node_ids {sorted(unknown)}")
     for node in data["nodes"]:
         if source and not node.get("evidence"):
             raise ValueError(f"{node['id']}: a paper-grounded node needs evidence")
@@ -94,7 +110,7 @@ def validate_data(data):
         if min(node["stage"], node.get("lane", 0)) < 0:
             raise ValueError(f"{node['id']}: stage and lane must be nonnegative")
         formula = node["mechanics"].get("formula_latex", "")
-        if any(ord(c) < 32 for c in formula):
+        if any(ord(c) < 32 and c != "\n" for c in formula):
             raise ValueError(f"{node['id']}: control character in formula_latex; check JSON backslash escaping")
         for paper in node.get("papers", []):
             url = paper.get("url", "")
@@ -189,13 +205,24 @@ def main() -> int:
     try:
         data = json.loads(data_path.read_text(encoding="utf-8"))
         validate_data(data)
+        node_runtime = shutil.which("node")
+        if node_runtime:
+            verification = subprocess.run(
+                [node_runtime, str(script_dir / "check_math.cjs")],
+                input=json.dumps(data, ensure_ascii=False), text=True, capture_output=True,
+            )
+            if verification.returncode:
+                raise ValueError(verification.stderr.strip())
+        else:
+            print("[WARN] Node.js unavailable; verify formulas in the generated guide.", file=sys.stderr)
         image_uri = encode_image_data_uri(image_path)
         template = template_path.read_text(encoding="utf-8")
         vendor = script_dir.parent / "assets/vendor/katex"
         license_text = (vendor / "LICENSE").read_text(encoding="utf-8")
         css = (vendor / "katex.css").read_text(encoding="utf-8")
         js = (vendor / "katex.min.js").read_text(encoding="utf-8")
-        bundle = f"<!-- KaTeX 0.16.47\n{license_text}-->\n<style>{css}</style>\n<script>{js}</script>"
+        math_js = (script_dir.parent / "assets/math.js").read_text(encoding="utf-8")
+        bundle = f"<!-- KaTeX 0.16.47\n{license_text}-->\n<style>{css}</style>\n<script>{js}</script>\n<script>{math_js}</script>"
         tokens = {
             "__PAGE_TITLE__": html.escape(data["meta"]["title"]),
             "/*__ARCH_DATA_PLACEHOLDER__*/null": safe_json_for_script(data),
