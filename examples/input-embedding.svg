@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 240" role="img" aria-labelledby="title">
+  <title id="title">Transformer input embedding and position addition, illustrative diagram</title>
+  <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="m0 0 10 5-10 5z" fill="#334155"/></marker></defs>
+  <rect width="420" height="240" fill="#fcfbf8"/>
+  <g fill="#243248" font-family="Georgia, serif" text-anchor="middle">
+    <text x="210" y="32" font-size="20">Transformer input representation</text>
+    <text x="108" y="73">Token IDs [B, L]</text>
+    <rect x="25" y="97" width="166" height="42" rx="6" fill="#eaeefa" stroke="#6679a5"/>
+    <text x="108" y="124">Scaled embedding</text>
+    <text x="309" y="73">Position [L, D]</text>
+    <circle cx="309" cy="118" r="18" fill="#f2ebdf" stroke="#87704b"/>
+    <text x="309" y="125" font-size="24">+</text>
+    <text x="309" y="199">X [B, L, D]</text>
+  </g>
+  <g fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)">
+    <path d="M108 79v16"/><path d="M191 118h97"/><path d="M309 79v19"/><path d="M309 137v43"/>
+  </g>
+</svg>

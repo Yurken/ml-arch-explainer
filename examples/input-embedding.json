@@ -1,0 +1,177 @@
+{
+  "meta": {
+    "title": "Transformer 输入端",
+    "subtitle": "词元如何获得位置信息",
+    "domain": "序列建模",
+    "venue_year": "",
+    "core_insight": "同一个词元在不同位置查到相同的词向量。加上对应位置的编码后，模型才能从输入表征中区分它们。",
+    "tags": [
+      "词嵌入",
+      "正弦位置编码"
+    ],
+    "default_layout": "horizontal",
+    "overview_summary": "本例把 Transformer 的输入表征拆成两步。先把整数词元映射成向量，再把位置向量广播到每个样本。结果可送入编码器的第一层。",
+    "uncertainties": [
+      "原图是为演示绘制的局部示意图。B、L、D 采用符号尺寸，浮点精度和是否启用 dropout 由实现决定。"
+    ]
+  },
+  "symbol_glossary": [
+    {
+      "symbol": "B",
+      "meaning": "Batch size（批大小）"
+    },
+    {
+      "symbol": "L",
+      "meaning": "序列长度（Sequence length）"
+    },
+    {
+      "symbol": "D",
+      "meaning": "隐藏层特征维度（d_model）"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "embed",
+      "name": "缩放词嵌入",
+      "short_name": "词嵌入",
+      "stage": 0,
+      "lane": 0,
+      "category": "input",
+      "repeat_badge": "",
+      "role": "将每个整数词元映射为 D 维向量。",
+      "io": {
+        "inputs": [
+          {
+            "name": "词元 ID",
+            "shape": "[B, L]",
+            "dtype": "int64"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "E",
+            "shape": "[B, L, D]",
+            "dtype": "float"
+          }
+        ]
+      },
+      "mechanics": {
+        "intuition": "批内每个位置按词元 ID 查找同一张嵌入表。",
+        "formula_latex": "E=\\sqrt{D}\\,W[x]",
+        "formula_notes": [
+          "$W$ 的每一行对应一个词元。"
+        ],
+        "pseudocode": "e = embedding(ids) * math.sqrt(d_model)"
+      },
+      "rationale": {
+        "why_here": "输入的整数编号需要先对应到可学习的特征。"
+      },
+      "concepts": [
+        {
+          "term": "查表",
+          "brief": "相同编号总是索引嵌入矩阵中的同一行。"
+        }
+      ],
+      "papers": [
+        {
+          "title": "Attention Is All You Need",
+          "authors_year": "Vaswani et al., 2017",
+          "relation": "foundational",
+          "takeaway": "文中第 3.4 和 3.5 节描述了嵌入缩放与位置编码。",
+          "url": "https://arxiv.org/search/?query=Attention+Is+All+You+Need&searchtype=all",
+          "verified": false
+        }
+      ]
+    },
+    {
+      "id": "add_pos",
+      "name": "叠加位置编码",
+      "short_name": "位置相加",
+      "stage": 1,
+      "lane": 0,
+      "category": "projection",
+      "role": "把每个位置的编码加到该处词向量上。",
+      "io": {
+        "inputs": [
+          {
+            "name": "E",
+            "shape": "[B, L, D]"
+          },
+          {
+            "name": "P",
+            "shape": "[L, D]"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "X",
+            "shape": "[B, L, D]"
+          }
+        ]
+      },
+      "mechanics": {
+        "intuition": "同一个位置向量在批次内共享，对应的词向量可以各不相同。",
+        "formula_latex": "X_{b,l,:}=E_{b,l,:}+P_{l,:}",
+        "formula_notes": [
+          "$b$、$l$ 分别索引样本和位置。"
+        ],
+        "pseudocode": "x = e + pos[:length].unsqueeze(0)"
+      },
+      "rationale": {
+        "why_here": "第一层自注意力收到的输入已经携带词元内容与位置。",
+        "alternatives": [
+          "可学习的位置向量也能与词向量逐元素相加。"
+        ],
+        "ablation_impact": "机制推断：移除此项会消除输入端的显式位置信号。"
+      },
+      "papers": [
+        {
+          "title": "Attention Is All You Need",
+          "authors_year": "Vaswani et al., 2017",
+          "relation": "foundational",
+          "takeaway": "文中第 3.4 和 3.5 节描述了嵌入缩放与位置编码。",
+          "url": "https://arxiv.org/search/?query=Attention+Is+All+You+Need&searchtype=all",
+          "verified": false
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source": "embed",
+      "target": "add_pos",
+      "type": "main",
+      "label": "E",
+      "tensor_shape": "[B, L, D]",
+      "description": "缩放后的嵌入进入逐元素加法。"
+    }
+  ],
+  "steps": [
+    {
+      "step_number": 1,
+      "title": "查找词向量",
+      "phase": "forward",
+      "focus_node": "embed",
+      "active_nodes": [
+        "embed"
+      ],
+      "active_edges": [],
+      "narration": "将每个词元编号替换成 D 维向量，保留批次和序列两个维度。"
+    },
+    {
+      "step_number": 2,
+      "title": "加入位置信号",
+      "phase": "forward",
+      "focus_node": "add_pos",
+      "active_nodes": [
+        "embed",
+        "add_pos"
+      ],
+      "active_edges": [
+        "e1"
+      ],
+      "narration": "按序列位置加上 P，第一个编码器模块将收到 [B, L, D] 的输入。"
+    }
+  ]
+}
